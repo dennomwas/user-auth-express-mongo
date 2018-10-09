@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const session = require('express-session');
+const mongoStore = require('connect-mongo')(session);
 const app = express();
 
 // parse incoming requests
@@ -18,6 +20,22 @@ mongoose.connect('mongodb://localhost:27017/bookworm', {
 });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:')); //log mongo errors
+
+// use session to track logins
+app.use(session({
+    secret: "Learn to express yourself",
+    resave: true,
+    saveUninitialized: false,
+    store: new mongoStore({
+        mongooseConnection: db
+    })
+}));
+
+// make user ID available in all templates
+app.use((req, res, next) => {
+    res.locals.currentUser = req.session.userID;
+    next();
+});
 
 // view engine setup
 app.set('view engine', 'pug');
